@@ -30,7 +30,6 @@ import {
 const router = express.Router();
 
 // ── Dual auth middleware (JWT or ephemeral token for <img> src) ─────────────
-
 function authFromQuery(req: Request, res: Response, next: NextFunction) {
   const queryToken = req.query.token as string | undefined;
   if (queryToken) {
@@ -178,7 +177,6 @@ router.get('/albums', authenticate, async (req: Request, res: Response) => {
     res.status(502).json({ error: 'Could not reach Immich' });
   }
 });
-
 router.post('/trips/:tripId/album-links', authenticate, async (req: Request, res: Response) => {
   const authReq = req as AuthRequest;
   const { tripId } = req.params;
