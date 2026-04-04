@@ -140,21 +140,26 @@ async function _fetchSynologyJson<T>(url: string, body: URLSearchParams): Promis
     if (!SsrfResult.allowed) {
         return fail(SsrfResult.error, 400);
     }
-    const resp = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        },
-        body,
-        signal: AbortSignal.timeout(30000),
-    });
-
-    if (!resp.ok) {
-        return fail('Synology API request failed with status ' + resp.status, resp.status);
+    try {
+        const resp = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            },
+            body,
+            signal: AbortSignal.timeout(30000),
+        });
+        if (!resp.ok) {
+            return fail('Synology API request failed with status ' + resp.status, resp.status);
+        }
+        const response = await resp.json() as SynologyApiResponse<T>;
+        return response.success ? success(response.data) : fail('Synology failed with code ' + response.error.code, response.error.code);
+    }
+    catch {
+        return fail('Failed to connect to Synology API', 500);
     }
 
-    const response = await resp.json() as SynologyApiResponse<T>;
-    return response.success ? success(response.data) : fail('Synology failed with code ' + response.error.code, response.error.code);
+
 }
 
 async function _loginToSynology(url: string, username: string, password: string): Promise<ServiceResult<string>> {
@@ -382,12 +387,12 @@ export async function syncSynologyAlbumLink(userId: number, tripId: string, link
         asset_ids: allItems.map(item => String(item.additional?.thumbnail?.cache_key || '')).filter(id => id),
     };
 
-    
+
     const result = await addTripPhotos(tripId, userId, true, [selection], sid, linkId);
     if (!result.success) return result as ServiceResult<SyncAlbumResult>;
-    
+
     updateSyncTimeForAlbumLink(linkId);
-    
+
     return success({ added: result.data.added, total: allItems.length });
 }
 
